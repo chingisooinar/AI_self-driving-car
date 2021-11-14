@@ -11,7 +11,7 @@ import os
 import numpy as np
 
 # defining customized Dataset class for Udacity
-
+from .aug_utils import translate_image, add_random_shadow, change_image_brightness_rgb
 import torch
 from torch.utils.data import Dataset, DataLoader, Sampler
 from torchvision import transforms, utils
@@ -64,17 +64,26 @@ class UdacityDataset(Dataset):
     def __len__(self):
         return len(self.camera_csv)
     
-    def read_data_single(self, idx):
+    def read_data_single(self, idx, flip_horizontally, translate):
         path = os.path.join(self.root_dir, self.camera_csv['filename'].iloc[idx])
         image = cv2.imread(path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image = image[65:-25,:,:]
-        
+
+        if random.uniform(0, 1) > 0.5:
+            image = change_image_brightness_rgb(image)
+        if random.uniform(0, 1) > 0.5:
+            image = add_random_shadow(image)
+
         timestamp = self.camera_csv['timestamp'].iloc[idx]
         frame_id = self.camera_csv['frame_id'].iloc[idx]
         angle = self.camera_csv['angle'].iloc[idx]
         torque = self.camera_csv['torque'].iloc[idx]
         speed = self.camera_csv['speed'].iloc[idx]
+
+        if translate is not None:
+            image, angle  = translate_image(image, angle, *translate)
+    
         angle_t = torch.tensor(angle) * 50
         torque_t = torch.tensor(torque)
         speed_t = torch.tensor(speed)
@@ -103,20 +112,27 @@ class UdacityDataset(Dataset):
             optical_rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
             optical_rgb = self.normalize(self.to_tensor(optical_rgb))
             del image
+            if flip_horizontally:
+                image_transformed = torch.fliplr(image_transformed)
+                angle_t = angle_t * -1.0
+                optical_rgb = torch.fliplr(optical_rgb)
+
             return image_transformed, timestamp, frame_id, angle_t, torque_t, speed_t, optical_rgb
         
         if self.transform:
             del image
             image = image_transformed
-        
-        
+        if flip_horizontally:
+            image = torch.fliplr(image)
+            angle_t = angle_t * -1.0
+    
         return image, timestamp, frame_id, angle_t, torque_t, speed_t
     
-    def read_data(self, idx):
+    def read_data(self, idx, flip_horizontally, translate):
         if isinstance(idx, list):
             data = None
             for i in idx:
-                new_data = self.read_data(i)
+                new_data = self.read_data(i, flip_horizontally, translate)
                 if data is None:
                     data = [[] for _ in range(len(new_data))]
                 for i, d in enumerate(new_data):
@@ -132,13 +148,19 @@ class UdacityDataset(Dataset):
             return data
         
         else:
-            return self.read_data_single(idx)
+            return self.read_data_single(idx, flip_horizontally, translate)
     
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
-        
-        data = self.read_data(idx)
+        flip_horizontally = random.uniform(0, 1) > 0.5
+        translate = None
+        if random.uniform(0, 1) > 0.5:
+            translation_x = np.random.randint(-60, 61) 
+            translation_y = np.random.randint(-20, 21)
+            translate = (translation_x, translation_y, 0.35/100.0)
+            
+        data = self.read_data(idx, flip_horizontally, translate)
         
         sample = {'image': data[0],
                   'timestamp': data[1],
