@@ -24,6 +24,7 @@ import random
 from model.TransferLearning import TLearning
 from torch.nn.parallel import DistributedDataParallel as DDP
 import wandb
+from DataLoading.aug_utils import change_image_brightness_rgb, add_random_shadow
 # noinspection PyAttributeOutsideInit
 class AverageMeter(object):
     """Computes and stores the average and current value"""
@@ -72,9 +73,6 @@ training_set = UD.UdacityDataset(csv_file='/home/chingis/self-driving-car/output
                              root_dir='/home/chingis/self-driving-car/output/',
                              optical_flow=False,
                              transform=transforms.Compose([
-                                 transforms.Lambda(lambda x: Image.fromarray(np.uint8(x)).convert('RGB')),
-                                 transforms.GaussianBlur(kernel_size=(5, 5)),
-                                 transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.3), 
                                  transforms.ToTensor(),
                                  transforms.Normalize(0.5, 0.5)
                                  ]),
@@ -104,10 +102,7 @@ for epoch in range(32):
         
         param_values = [v for v in training_sample.values()]
         image, angle = param_values[0], param_values[3]
-        #print(image.shape)
-        if random.uniform(0, 1) > 0.5:        
-            image = torch.fliplr(image)
-            angle = angle * -1.0
+
 
         image = image.to(device)
         prediction = network(image)
