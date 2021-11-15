@@ -7,6 +7,7 @@ Created on Sun Nov 14 15:13:57 2021
 """
 import numpy as np
 import cv2
+import random
 def change_image_brightness_rgb(img, s_low=0.2, s_high=0.75):
     """
     Changes the image brightness by multiplying all RGB values by the same scalacar in [s_low, s_high).
@@ -44,6 +45,9 @@ def add_random_shadow(img, w_low=0.6, w_high=0.85):
     
     return cv2.addWeighted(img.astype(np.int32), origin_weight, mask, mask_weight, 0).astype(np.uint8)
 
+def blur(image):
+    return cv2.GaussianBlur(image, (9, 9), 0)
+
 def translate_image(img, st_angle, translation_x, translation_y, delta_st_angle_per_px):
     """
     Shifts the image right, left, up or down. 
@@ -58,3 +62,15 @@ def translate_image(img, st_angle, translation_x, translation_y, delta_st_angle_
     img = cv2.warpAffine(img, translation_matrix, (cols, rows))
     
     return img, st_angle
+
+def do_rotate(image, angle, rotation_angle): #min=5, max=15, orientation='rand'):
+    
+    rows,cols,ch = image.shape
+    
+    #Randomly select a rotation angle from the range passed.
+
+    rot_correct = 0.03
+    M = cv2.getRotationMatrix2D((cols/2,rows/2), rotation_angle, 1)
+    rshift = -rotation_angle
+    angle += rot_correct * rshift
+    return cv2.warpAffine(image, M, (cols, rows)), angle
