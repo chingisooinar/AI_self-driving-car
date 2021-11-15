@@ -11,7 +11,7 @@ import os
 import numpy as np
 
 # defining customized Dataset class for Udacity
-from .aug_utils import translate_image, add_random_shadow, change_image_brightness_rgb, do_rotate, blur
+from .aug_utils import apply_augs
 import torch
 from torch.utils.data import Dataset, DataLoader, Sampler
 from torchvision import transforms, utils
@@ -64,27 +64,22 @@ class UdacityDataset(Dataset):
     def __len__(self):
         return len(self.camera_csv)
     
-    def read_data_single(self, idx, flip_horizontally, translate, rotate):
+    def read_data_single(self, idx, augs):
         path = os.path.join(self.root_dir, self.camera_csv['filename'].iloc[idx])
         image = cv2.imread(path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image = image[65:-25,:,:]
+        original_img = image.copy()
         # angle independent augs
-        if random.uniform(0, 1) > 0.5:
-            image = change_image_brightness_rgb(image)
-        if random.uniform(0, 1) > 0.5:
-            image = add_random_shadow(image)
-        if random.uniform(0, 1) > 0.5:
-            image = blur(image)
+
+        augs['random_brightness'] = random.uniform(0, 1) > 0.5 #image = change_image_brightness_rgb(image)
+        augs['random_shadow'] = random.uniform(0, 1) > 0.5
+        augs['random_blur'] = random.uniform(0, 1) > 0.5
+
 
         angle = self.camera_csv['angle'].iloc[idx]
-        # angle modifying augs
-        if rotate is not None:
-            image, angle = do_rotate(image, angle, *rotate)
 
-        if translate is not None:
-            image, angle  = translate_image(image, angle, *translate)
-    
+        image, angle = apply_augs(image, angle, augs)
         angle_t = torch.tensor(angle)
 
   
@@ -99,20 +94,21 @@ class UdacityDataset(Dataset):
                 prev = prev[65:-25,:,:]
                 prev = cv2.cvtColor(prev, cv2.COLOR_RGB2GRAY)
             else:
-                prev = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-            cur = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+                prev = cv2.cvtColor(original_img, cv2.COLOR_RGB2GRAY)
+            cur = cv2.cvtColor(original_img, cv2.COLOR_RGB2GRAY)
             # Use Hue, Saturation, Value colour model
             flow = cv2.calcOpticalFlowFarneback(prev, cur, None, 0.5, 3, 15, 3, 5, 1.2, 0)
-            hsv = np.zeros(image.shape, dtype=np.uint8)
+            hsv = np.zeros(original_img.shape, dtype=np.uint8)
             hsv[..., 1] = 255
             
             mag, ang = cv2.cartToPolar(flow[..., 0], flow[..., 1])
             hsv[..., 0] = ang * 180 / np.pi / 2
             hsv[..., 2] = cv2.normalize(mag, None, 0, 255, cv2.NORM_MINMAX)
-            optical_rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
+            optical_rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2RGB)
+            optical_rgb, _ = apply_augs(optical_rgb, 0, augs, optical=True)
             optical_rgb = self.transform(optical_rgb)
-            del image
-            if flip_horizontally:
+            del original_img
+            if augs['flip']:
                 image_transformed = torch.fliplr(image_transformed)
                 angle_t = angle_t * -1.0
                 optical_rgb = torch.fliplr(optical_rgb)
@@ -122,17 +118,17 @@ class UdacityDataset(Dataset):
         if self.transform:
             del image
             image = image_transformed
-        if flip_horizontally:
+        if augs['flip']:
             image = torch.fliplr(image)
             angle_t = angle_t * -1.0
     
         return image, angle_t
     
-    def read_data(self, idx, flip_horizontally, translate, rotate):
+    def read_data(self, idx, augs):
         if isinstance(idx, list):
             data = None
             for i in idx:
-                new_data = self.read_data(i, flip_horizontally, translate, rotate)
+                new_data = self.read_data(i, augs)
                 if data is None:
                     data = [[] for _ in range(len(new_data))]
                 for i, d in enumerate(new_data):
@@ -148,7 +144,7 @@ class UdacityDataset(Dataset):
             return data
         
         else:
-            return self.read_data_single(idx, flip_horizontally, translate, rotate)
+            return self.read_data_single(idx, augs)
     
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
@@ -164,8 +160,12 @@ class UdacityDataset(Dataset):
             random_rot = np.random.randint(5, 15+1)
             rotation_angle = random.choice([-random_rot, random_rot])
             rotate = (rotation_angle,)
-
-        data = self.read_data(idx, flip_horizontally, translate, rotate)
+        augs = dict(
+            flip=flip_horizontally,
+            trans=translate,
+            rot=rotate,
+            )
+        data = self.read_data(idx, augs)
 
         sample = {'image': data[0],
                   'angle': data[1]}

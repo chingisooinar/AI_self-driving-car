@@ -74,3 +74,19 @@ def do_rotate(image, angle, rotation_angle): #min=5, max=15, orientation='rand')
     rshift = -rotation_angle
     angle += rot_correct * rshift
     return cv2.warpAffine(image, M, (cols, rows)), angle
+
+def apply_augs(image, angle, augs, optical=False):
+    if not optical:
+        if augs['random_brightness']:
+            image = change_image_brightness_rgb(image)
+        if augs['random_shadow']: 
+            image = add_random_shadow(image)
+        if augs['random_blur']:
+            image = blur(image)
+    
+    if augs['rot'] is not None:
+        image, angle = do_rotate(image, angle, *augs['rot'])
+    
+    if augs['trans'] is not None:
+        image, angle  = translate_image(image, angle, *augs['trans'])
+    return image, angle
