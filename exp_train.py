@@ -5,7 +5,6 @@ Created on Sat Nov  6 12:24:40 2021
 
 @author: chingis
 """
-from PIL import Image
 from skimage.transform import resize
 from itertools import product
 from easydict import EasyDict as edict
@@ -72,7 +71,6 @@ split_point = int(dataset_size * 0.9)
 training_set = UD.UdacityDataset(csv_file='/home/chingis/self-driving-car/output/interpolated.csv',
                              root_dir='/home/chingis/self-driving-car/output/',
                              transform=transforms.Compose([
-                                 transforms.Lambda(lambda x: Image.fromarray(np.uint8(x)).convert('RGB')),
                                  transforms.Resize((120,320)),
                                  transforms.ToTensor(),
                                  transforms.Normalize(0.5, 0.5)
@@ -82,7 +80,6 @@ training_set = UD.UdacityDataset(csv_file='/home/chingis/self-driving-car/output
 validation_set = UD.UdacityDataset(csv_file='/home/chingis/self-driving-car/output/interpolated.csv',
                              root_dir='/home/chingis/self-driving-car/output/',
                              transform=transforms.Compose([
-                                 transforms.Lambda(lambda x: Image.fromarray(np.uint8(x)).convert('RGB')),
                                  transforms.Resize((120,320)),
                                  transforms.ToTensor(),
                                  transforms.Normalize(0.5, 0.5)]),
@@ -129,7 +126,7 @@ for epoch in range(200):
             prediction = network(image, optical)
             prediction = prediction.reshape(-1, 1)
             labels = angle.float().reshape(-1, 1).to(device)
-            training_loss_angle = torch.sqrt(criterion(prediction,labels) + 1e-6)
+            training_loss_angle = torch.sqrt(criterion(prediction,labels))
         losses.update(training_loss_angle.item())
         optimizer.zero_grad()
         scaler.scale(training_loss_angle).backward()
@@ -155,7 +152,7 @@ for epoch in range(200):
                 prediction = prediction.reshape(-1,1)
                 labels = angle.float().reshape(-1,1).to(device)
 
-                validation_loss_angle = torch.sqrt(criterion(prediction,labels)+ 1e-6)
+                validation_loss_angle = torch.sqrt(criterion(prediction,labels))
             val_losses.update(validation_loss_angle.item())
     wandb.log({'training_loss': losses.avg, 'val_loss': val_losses.avg})
     
