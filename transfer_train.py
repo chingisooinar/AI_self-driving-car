@@ -116,16 +116,16 @@ for epoch in range(200):
 
         
         image = image.to(device)
-        with torch.cuda.amp.autocast():
-            prediction = network(image)
-            prediction = prediction.reshape(-1, 1)
-            labels = angle.float().reshape(-1, 1).to(device)
-            training_loss_angle = torch.sqrt(criterion(prediction,labels) + 1e-6)
+
+        prediction = network(image)
+        prediction = prediction.reshape(-1, 1)
+        labels = angle.float().reshape(-1, 1).to(device)
+        training_loss_angle = torch.sqrt(criterion(prediction,labels) + 1e-6)
         losses.update(training_loss_angle.item())
         optimizer.zero_grad()
-        scaler.scale(training_loss_angle).backward()
-        scaler.step(optimizer)
-        scaler.update()
+        training_loss_angle.backward()
+        optimizer.step()
+
 
     
     print("Done")
@@ -138,12 +138,12 @@ for epoch in range(200):
             image, angle = param_values
             cur_bn = image.shape[0]
             image = image.to(device)
-            with torch.cuda.amp.autocast():
-                prediction = network(image)
-                prediction = prediction.reshape(-1,1)
-                labels = angle.float().reshape(-1,1).to(device)
 
-                validation_loss_angle = torch.sqrt(criterion(prediction,labels)+ 1e-6)
+            prediction = network(image)
+            prediction = prediction.reshape(-1,1)
+            labels = angle.float().reshape(-1,1).to(device)
+
+            validation_loss_angle = torch.sqrt(criterion(prediction,labels)+ 1e-6)
             val_losses.update(validation_loss_angle.item())
     wandb.log({'training_loss': losses.avg, 'val_loss': val_losses.avg})
     
