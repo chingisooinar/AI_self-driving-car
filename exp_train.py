@@ -52,12 +52,13 @@ parameters = edict(
 )
 
 
-network = Convolution3D().to(device)
+network = Convolution3D()
 #network = torch.nn.DataParallel(network).to(device)
-
+#network.load_state_dict(torch.load('saved_models/CNN3D/epoch-31.tar'))
+network.to(device)
 wandb.init(config=parameters, project='self-driving-car')
 wandb.watch(network)
-optimizer = optim.Adam(network.parameters(),lr = parameters.learning_rate,betas=(0.9, 0.999), eps=1e-08, weight_decay=0.001)
+optimizer = optim.Adam(network.parameters(),lr = parameters.learning_rate,betas=(0.9, 0.999), eps=1e-08)
 
 udacity_dataset = UD.UdacityDataset(csv_file='/home/chingis/self-driving-car/output/interpolated.csv',
                              root_dir='/home/chingis/self-driving-car/output/',
@@ -97,10 +98,22 @@ validation_loader = DataLoader(validation_set, sampler=validation_cbs, num_worke
 criterion =  torch.nn.MSELoss()
 criterion.to(device)
 scaler = torch.cuda.amp.GradScaler()
-for epoch in range(32):
+
+def adjust_learning_rate(optimizer, epoch):
+    """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
+    lr = parameters.learning_rate
+    if epoch in [30, 90, 150]:
+        lr = parameters.learning_rate * 0.1
+        parameters.learning_rate = lr
+
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = lr
+
+for epoch in range(200):
     losses = AverageMeter()
     torch.save(network.state_dict(), "saved_models/CNN3D/epoch-{}.tar".format(epoch))
     network.train()
+    adjust_learning_rate(optimizer, epoch)
     # Calculation on Training Loss
     for training_sample in tqdm(training_loader):
         param_values = [v for v in training_sample.values()]
@@ -116,8 +129,7 @@ for epoch in range(32):
             prediction = network(image, optical)
             prediction = prediction.reshape(-1, 1)
             labels = angle.float().reshape(-1, 1).to(device)
-            training_loss_angle =criterion(prediction,labels)
-
+            training_loss_angle = torch.sqrt(criterion(prediction,labels) + 1e-6)
         losses.update(training_loss_angle.item())
         optimizer.zero_grad()
         scaler.scale(training_loss_angle).backward()
@@ -143,7 +155,7 @@ for epoch in range(32):
                 prediction = prediction.reshape(-1,1)
                 labels = angle.float().reshape(-1,1).to(device)
 
-                validation_loss_angle = criterion(prediction,labels)
+                validation_loss_angle = torch.sqrt(criterion(prediction,labels)+ 1e-6)
             val_losses.update(validation_loss_angle.item())
     wandb.log({'training_loss': losses.avg, 'val_loss': val_losses.avg})
     
