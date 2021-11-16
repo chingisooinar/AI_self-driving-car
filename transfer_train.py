@@ -124,7 +124,7 @@ for epoch in range(200):
             prediction = network(image)
             prediction = prediction.reshape(-1, 1)
             labels = angle.float().reshape(-1, 1).to(device)
-            training_loss_angle = torch.sqrt(criterion(prediction,labels) + 1e-6)
+            training_loss_angle = torch.sqrt(criterion(prediction,labels))
         losses.update(training_loss_angle.item())
         optimizer.zero_grad()
         scaler.scale(training_loss_angle).backward()
@@ -147,7 +147,7 @@ for epoch in range(200):
                 prediction = prediction.reshape(-1,1)
                 labels = angle.float().reshape(-1,1).to(device)
 
-                validation_loss_angle = torch.sqrt(criterion(prediction,labels)+ 1e-6)
+                validation_loss_angle = torch.sqrt(criterion(prediction,labels))
             val_losses.update(validation_loss_angle.item())
     wandb.log({'training_loss': losses.avg, 'val_loss': val_losses.avg})
     
