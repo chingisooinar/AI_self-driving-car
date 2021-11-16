@@ -84,8 +84,8 @@ class EvalDataset(Dataset):
             mag, ang = cv2.cartToPolar(flow[..., 0], flow[..., 1])
             hsv[..., 0] = ang * 180 / np.pi / 2
             hsv[..., 2] = cv2.normalize(mag, None, 0, 255, cv2.NORM_MINMAX)
-            optical_rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
-            optical_rgb = self.normalize(self.to_tensor(optical_rgb))
+            optical_rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2RGB)
+            optical_rgb = self.transform(optical_rgb)
             del image
             return image_transformed, angle_t, idx_t, optical_rgb
                

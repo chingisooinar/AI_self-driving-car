@@ -152,14 +152,14 @@ class UdacityDataset(Dataset):
         flip_horizontally = random.uniform(0, 1) > 0.5
         translate = None
         if random.uniform(0, 1) > 0.5: # translate
-            translation_x = np.random.randint(-60, 61) 
-            translation_y = np.random.randint(-20, 21)
+            translation_x = np.random.randint(-26, 26) 
+            translation_y = np.random.randint(-26, 26)
             translate = (translation_x, translation_y, 0.35/100.0)
         rotate = None
         if random.uniform(0, 1) > 0.5: # rotate
-            random_rot = np.random.randint(5, 15+1)
-            rotation_angle = random.choice([-random_rot, random_rot])
-            rotate = (rotation_angle,)
+            random_rot = random.uniform(-1, 1)#np.random.randint(5, 15+1)
+            #rotation_angle = random.choice([-random_rot, random_rot])
+            rotate = (random_rot,)
         augs = dict(
             flip=flip_horizontally,
             trans=translate,

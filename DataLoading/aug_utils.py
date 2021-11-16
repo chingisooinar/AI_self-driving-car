@@ -7,6 +7,7 @@ Created on Sun Nov 14 15:13:57 2021
 """
 import numpy as np
 import cv2
+from scipy import ndimage
 import random
 def change_image_brightness_rgb(img, s_low=0.2, s_high=0.75):
     """
@@ -75,6 +76,9 @@ def do_rotate(image, angle, rotation_angle): #min=5, max=15, orientation='rand')
     angle += rot_correct * rshift
     return cv2.warpAffine(image, M, (cols, rows)), angle
 
+def rotate_fn(img, rotate):
+    return ndimage.rotate(img, rotate, reshape=False)
+
 def apply_augs(image, angle, augs, optical=False):
     if not optical:
         if augs['random_brightness']:
@@ -85,7 +89,7 @@ def apply_augs(image, angle, augs, optical=False):
             image = blur(image)
     
     if augs['rot'] is not None:
-        image, angle = do_rotate(image, angle, *augs['rot'])
+        image = rotate_fn(image, *augs['rot'])
     
     if augs['trans'] is not None:
         image, angle  = translate_image(image, angle, *augs['trans'])
