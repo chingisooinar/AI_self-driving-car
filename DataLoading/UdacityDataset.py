@@ -2,7 +2,7 @@
 # coding: utf-8
 
 
-
+from PIL import Image
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -84,7 +84,7 @@ class UdacityDataset(Dataset):
 
   
         if self.transform:
-            image_transformed = self.transform(image)
+            image_transformed = self.transform(Image.fromarray(np.uint8(image)).convert('RGB'))
 
         if self.optical_flow:
             if idx != 0:
@@ -106,7 +106,7 @@ class UdacityDataset(Dataset):
             hsv[..., 2] = cv2.normalize(mag, None, 0, 255, cv2.NORM_MINMAX)
             optical_rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2RGB)
             optical_rgb, _ = apply_augs(optical_rgb, 0, augs, optical=True)
-            optical_rgb = self.transform(optical_rgb)
+            optical_rgb = self.transform(Image.fromarray(np.uint8(optical_rgb)).convert('RGB'))
             del original_img
             if augs['flip']:
                 image_transformed = torch.fliplr(image_transformed)
