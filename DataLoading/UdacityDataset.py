@@ -20,10 +20,10 @@ import random
 
 
 class UdacityDataset(Dataset):
-    def __init__(self, csv_file, root_dir, transform=None, select_camera=None, slice_frames=None, select_ratio=1.0, select_range=None, optical_flow=True):
+    def __init__(self, csv_file, root_dir, transform=None, select_camera=None, slice_frames=None, select_ratio=1.0, select_range=None, optical_flow=True, seq_len=0):
         
         assert select_ratio >= -1.0 and select_ratio <= 1.0 # positive: select to ratio from beginning, negative: select to ration counting from the end
-        
+        self.seq_len = seq_len
         camera_csv = pd.read_csv(csv_file)
         if select_camera:
             assert select_camera in ['left_camera', 'right_camera', 'center_camera'], "Invalid camera: {}".format(select_camera)
@@ -68,7 +68,7 @@ class UdacityDataset(Dataset):
         path = os.path.join(self.root_dir, self.camera_csv['filename'].iloc[idx])
         image = cv2.imread(path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        image = image[65:-25,:,:]
+        image = image[200:,:,:]
         original_img = image.copy()
         # angle independent augs
 
@@ -91,7 +91,7 @@ class UdacityDataset(Dataset):
                 path = os.path.join(self.root_dir, self.camera_csv['filename'].iloc[idx - 1])
                 prev = cv2.imread(path)
                 prev = cv2.cvtColor(prev, cv2.COLOR_BGR2RGB)
-                prev = prev[65:-25,:,:]
+                prev = prev[200:,:,:]
                 prev = cv2.cvtColor(prev, cv2.COLOR_RGB2GRAY)
             else:
                 prev = cv2.cvtColor(original_img, cv2.COLOR_RGB2GRAY)
@@ -125,9 +125,42 @@ class UdacityDataset(Dataset):
         return image, angle_t
     
     def read_data(self, idx, augs):
+        """
+        Parameters
+        ----------
+        idx : list or int
+            DESCRIPTION.
+            in case of list:
+                if len(idx) == batch_size -> do not choose augmentations since it will be applied to the whole batch
+                if len(idx) == sequence_length -> apply augmentations
+            in case of int:
+                apply augmentations
+        augs: a dict of augmentations
+        Returns
+        -------
+        image(s), angle(s), (optical_flow: optional)
+        """
+        if (isinstance(idx, int) and self.seq_len == 0) or (isinstance(idx, list) and len(idx) == self.seq_len):
+            flip_horizontally = random.uniform(0, 1) > 0.5
+            translate = None
+            if random.uniform(0, 1) > 0.5: # translate
+                translation_x = np.random.randint(-26, 26) 
+                translation_y = np.random.randint(-26, 26)
+                translate = (translation_x, translation_y, 0.35/100.0)
+            rotate = None
+            if random.uniform(0, 1) > 0.5: # rotate
+                random_rot = random.uniform(-1, 1)#np.random.randint(5, 15+1)
+                #rotation_angle = random.choice([-random_rot, random_rot])
+                rotate = (random_rot,)
+            augs = dict(
+                flip=flip_horizontally,
+                trans=translate,
+                rot=rotate,
+                )
         if isinstance(idx, list):
             data = None
             for i in idx:
+                
                 new_data = self.read_data(i, augs)
                 if data is None:
                     data = [[] for _ in range(len(new_data))]
@@ -149,21 +182,10 @@ class UdacityDataset(Dataset):
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
-        flip_horizontally = random.uniform(0, 1) > 0.5
-        translate = None
-        if random.uniform(0, 1) > 0.5: # translate
-            translation_x = np.random.randint(-26, 26) 
-            translation_y = np.random.randint(-26, 26)
-            translate = (translation_x, translation_y, 0.35/100.0)
-        rotate = None
-        if random.uniform(0, 1) > 0.5: # rotate
-            random_rot = random.uniform(-1, 1)#np.random.randint(5, 15+1)
-            #rotation_angle = random.choice([-random_rot, random_rot])
-            rotate = (random_rot,)
         augs = dict(
-            flip=flip_horizontally,
-            trans=translate,
-            rot=rotate,
+            flip=False,
+            trans=None,
+            rot=None,
             )
         data = self.read_data(idx, augs)
 
