@@ -34,7 +34,6 @@ class DAVE2(nn.Module):
     def forward(self,data):
               
         output = self.conv_layers(data)
-        print(output.shape)
         output = output.view(output.size(0), -1)
         output = self.dense_layers(output)
         return output
@@ -42,4 +41,3 @@ class DAVE2(nn.Module):
 if __name__ == '__main__':
     car = DAVE2()
     x = torch.randn(32, 3, 120, 320)
-    print(car(x).shape)

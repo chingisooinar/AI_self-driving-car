@@ -68,7 +68,7 @@ class UdacityDataset(Dataset):
         path = os.path.join(self.root_dir, self.camera_csv['filename'].iloc[idx])
         image = cv2.imread(path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        image = image[200:,:,:]
+        image = image[65:-25,:,:]
         original_img = image.copy()
         # angle independent augs
 
@@ -143,9 +143,9 @@ class UdacityDataset(Dataset):
         if (isinstance(idx, int) and self.seq_len == 0) or (isinstance(idx, list) and len(idx) == self.seq_len):
             flip_horizontally = random.uniform(0, 1) > 0.5
             translate = None
-            if random.uniform(0, 1) > 0.5: # translate
-                translation_x = np.random.randint(-26, 26) 
-                translation_y = np.random.randint(-26, 26)
+            if random.uniform(0, 1) > 0.65: # translate
+                translation_x = np.random.randint(-10, 10) 
+                translation_y = np.random.randint(-10, 10)
                 translate = (translation_x, translation_y, 0.35/100.0)
             rotate = None
             if random.uniform(0, 1) > 0.5: # rotate

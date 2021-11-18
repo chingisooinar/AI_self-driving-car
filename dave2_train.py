@@ -21,7 +21,7 @@ if __name__ == '__main__':
     from DataLoading import UdacityDataset as UD
     from DataLoading import ConsecutiveBatchSampler as CB
     import random
-    from model.TransferLearning import TLearning
+    from model.DAVE2 import DAVE2
     from torch.nn.parallel import DistributedDataParallel as DDP
     import wandb
     from DataLoading.aug_utils import change_image_brightness_rgb, add_random_shadow
@@ -53,7 +53,7 @@ if __name__ == '__main__':
     )
 
 
-    network = TLearning().to(device)
+    network = DAVE2().to(device)
     #network = torch.nn.DataParallel(network).to(device)
 
     wandb.init(config=parameters, project='self-driving-car')
@@ -105,9 +105,9 @@ if __name__ == '__main__':
         for param_group in optimizer.param_groups:
             param_group['lr'] = lr
 
-    for epoch in range(200):
+    for epoch in range(160):
         losses = AverageMeter()
-        torch.save(network.state_dict(), "saved_models/TLearning/epoch-{}.tar".format(epoch))
+        torch.save(network.state_dict(), "saved_models/TLearning/DaveLearning/epoch-{}.tar".format(epoch))
         network.train()
         adjust_learning_rate(optimizer, epoch)
         # Calculation on Training Loss
@@ -122,7 +122,7 @@ if __name__ == '__main__':
             prediction = network(image)
             prediction = prediction.reshape(-1, 1)
             labels = angle.float().reshape(-1, 1).to(device)
-            training_loss_angle = torch.sqrt(criterion(prediction,labels) + 1e-6)
+            training_loss_angle = criterion(prediction,labels)
             losses.update(training_loss_angle.item())
             optimizer.zero_grad()
             training_loss_angle.backward()
