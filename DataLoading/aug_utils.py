@@ -9,6 +9,8 @@ import numpy as np
 import cv2
 from scipy import ndimage
 import random
+
+from PIL import Image
 def change_image_brightness_rgb(img, s_low=0.2, s_high=0.75):
     """
     Changes the image brightness by multiplying all RGB values by the same scalacar in [s_low, s_high).
@@ -47,7 +49,7 @@ def add_random_shadow(img, w_low=0.6, w_high=0.85):
     return cv2.addWeighted(img.astype(np.int32), origin_weight, mask, mask_weight, 0).astype(np.uint8)
 
 def blur(image):
-    return cv2.GaussianBlur(image, (9, 9), 0)
+    return cv2.GaussianBlur(image, (3, 3), 0)
 
 def translate_image(img, st_angle, translation_x, translation_y, delta_st_angle_per_px):
     """
@@ -63,6 +65,13 @@ def translate_image(img, st_angle, translation_x, translation_y, delta_st_angle_
     img = cv2.warpAffine(img, translation_matrix, (cols, rows))
     
     return img, st_angle
+def translate(image, steering_angle, x_translation, y_translation, x_translation_range, y_translation_range, steering_correction=0.065):
+    #3image = Image.fromarray(np.uint8(image)).convert('RGB')
+    steering_angle = steering_angle - (x_translation / x_translation_range * 2.0 * steering_correction)
+    transformation_matrix = np.float32([[1, 0, x_translation],[0, 1, y_translation]])
+    #transformed_img = image.transform(image.size, Image.AFFINE, transformation_matrix)
+    transformed_img = cv2.warpAffine(image, transformation_matrix, (image.shape[0], image.shape[1]))
+    return transformed_img, steering_angle
 
 def do_rotate(image, angle, rotation_angle): #min=5, max=15, orientation='rand'):
     

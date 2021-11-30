@@ -28,7 +28,7 @@ import random
 
 
 class EvalDataset(Dataset):
-    def __init__(self, csv_file, root_dir, transform=None, optical_flow=True, public=False, private=False):
+    def __init__(self, csv_file, root_dir, transform=None, optical_flow=True, public=False, private=False, img_size=(224, 224)):
         assert False in (public, private)
         mode = -1
         if public:
@@ -44,8 +44,7 @@ class EvalDataset(Dataset):
         self.original_camera = camera_csv
         self.root_dir = root_dir
         self.transform = transform
-        self.to_tensor = transforms.ToTensor()
-        self.normalize = transforms.Normalize(mean=0.5, std=0.5)
+        self.img_size = img_size
     
     def __len__(self):
         return len(self.camera_csv)
@@ -61,13 +60,12 @@ class EvalDataset(Dataset):
 
         angle = self.camera_csv['steering_angle'].iloc[idx]
         if self.transform:
-            image_transformed = self.transform(image)
+            image_transformed = self.transform(cv2.resize(image, tuple(self.img_size)))
         angle_t = torch.tensor(angle)
         idx_t = torch.tensor(idx)
         if self.optical_flow:
             og_idx = self.camera_csv['og_idx'].iloc[idx]
             if og_idx != 0:
-                
                 path = os.path.join(self.root_dir, str(self.original_camera['frame_id'].iloc[og_idx - 1]) + '.jpg')
                 prev = cv2.imread(path)
                 prev = cv2.cvtColor(prev, cv2.COLOR_BGR2RGB)
@@ -85,7 +83,7 @@ class EvalDataset(Dataset):
             hsv[..., 0] = ang * 180 / np.pi / 2
             hsv[..., 2] = cv2.normalize(mag, None, 0, 255, cv2.NORM_MINMAX)
             optical_rgb = cv2.cvtColor(hsv, cv2.COLOR_HSV2RGB)
-            optical_rgb = self.transform(optical_rgb)
+            optical_rgb = self.transform(cv2.resize(optical_rgb, tuple(self.img_size)))
             del image
             return image_transformed, angle_t, idx_t, optical_rgb
                
