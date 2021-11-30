@@ -20,7 +20,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models
 import math
-from .MotionEncoder import TransformerMotionEncoder, TransformerMotionEncoderLayer
 class PositionalEncoding(nn.Module):
 
     def __init__(self, d_model: int, dropout: float = 0.1, max_len: int = 5000):
@@ -42,19 +41,17 @@ class PositionalEncoding(nn.Module):
         x = x + self.pe[:x.size(0)]
         return self.dropout(x)
 
-class MotionTransformer(nn.Module):
+class SimpleTransformer(nn.Module):
     def __init__(self, seq_len):
         self.seq_len = seq_len
-        super(MotionTransformer,self).__init__()
+        super(SimpleTransformer,self).__init__()
         self.position_encoder = models.resnet18(pretrained=True)
-        self.motion_encoder = models.resnet18(pretrained=True)
         self.d_model = 512
         self.position_embedder = nn.Linear(in_features =1000, out_features = self.d_model, bias=True)
-        self.motion_embedder = nn.Linear(in_features =1000, out_features = self.d_model, bias=True)
         
-        self.encoder_layer = TransformerMotionEncoderLayer(d_model=self.d_model, nhead=4, dropout=0.1)
+        self.encoder_layer = nn.TransformerEncoderLayer(d_model=self.d_model, nhead=4, dropout=0.1)
         self.pos_encoder = PositionalEncoding(d_model=512)
-        self.transformer_encoder = TransformerMotionEncoder(self.encoder_layer, num_layers=2, norm=None) #nn.LayerNorm(512)
+        self.transformer_encoder = nn.TransformerEncoder(self.encoder_layer, num_layers=2, norm=None) #nn.LayerNorm(512)
         
 
         
@@ -70,21 +67,15 @@ class MotionTransformer(nn.Module):
         """Generates an upper-triangular matrix of -inf, with zeros on diag."""
         return torch.triu(torch.ones(sz, sz) * float('-inf'), diagonal=1)
     
-    def forward(self, frames, optical):
+    def forward(self, frames):
         frames = frames.reshape(-1, 3, 224, 224)
-        optical = optical.reshape(-1, 3, 224, 224)
        # print(x.shape)
         frames = F.relu(self.position_embedder(self.position_encoder(frames)))
         frames = frames.reshape(-1,  self.seq_len, self.d_model).permute(1, 0, 2)
 
-
-        optical = F.relu(self.motion_embedder(self.motion_encoder(optical)))
-        optical = optical.reshape(-1,  self.seq_len, self.d_model).permute(1, 0, 2)
-        
-
         #frames = self.pos_encoder(frames)
         attn_mask = self.generate_square_subsequent_mask(frames.shape[0]).cuda()
-        fused_embedding = F.relu(self.transformer_encoder((frames, optical), mask=attn_mask))
+        fused_embedding = F.relu(self.transformer_encoder(frames, mask=attn_mask))
         # LSTM 16
         #image = torch.tanh(self.LSTM2(image)[0])
 
@@ -94,8 +85,7 @@ class MotionTransformer(nn.Module):
         #reduced = F.relu(self.reduce(reduced))
         #motion_information = F.relu(self.motion_retrieval(reduced))
 
-        # FC 1
-        speed = self.speed_predictor(reduced)
+
  
         # FC 16
         #steering_information = F.relu(self.steering_retrieval(reduced))
@@ -103,4 +93,4 @@ class MotionTransformer(nn.Module):
         # FC 1
         angle = torch.tanh(self.steering_predictor(reduced))
 
-        return angle, speed
+        return angle
