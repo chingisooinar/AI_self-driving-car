@@ -6,6 +6,9 @@ Created on Sun Nov 14 12:54:17 2021
 @author: chingis
 """
 
+
+
+
 if __name__ == '__main__':
     from itertools import product
     from easydict import EasyDict as edict
@@ -14,6 +17,7 @@ if __name__ == '__main__':
     import torch
     from torch.utils.data import DataLoader
     from torchvision import transforms, utils, models
+    from model.TransferLearning import TLearning
     import torch.nn as nn 
     import torch.nn.functional as F
     import torch.optim as optim
@@ -50,11 +54,17 @@ if __name__ == '__main__':
         batch_size = 32,
         seq_len = 5,
         num_workers = 4,
+        model_name = 'dave2'
     )
-
-
-    network = DAVE2().to(device)
-    #network = torch.nn.DataParallel(network).to(device)
+    
+    if parameters.model_name == 'dave2':
+        model = DAVE2()
+    elif parameters.model_name == 'transfer':
+        model = TLearning()
+    else:
+        raise KeyError("Unknown Architecture")
+    
+    network = model.to(device)
 
     wandb.init(config=parameters, project='self-driving-car')
     wandb.watch(network)
@@ -62,7 +72,7 @@ if __name__ == '__main__':
 
     udacity_dataset = UD.UdacityDataset(csv_file='C:\\users/rladm/Desktop/training_data/output/interpolated.csv',
                                 root_dir='C:\\Users/rladm/Desktop/training_data/output/',
-                                transform=transforms.Compose([transforms.ToTensor()]),
+                                transform=transforms.Compose([transforms.ToPILImage(),transforms.ToTensor()]),
                                 select_camera='center_camera')
 
     dataset_size = int(len(udacity_dataset))
@@ -72,6 +82,7 @@ if __name__ == '__main__':
     training_set = UD.UdacityDataset(csv_file='C:\\users/rladm/Desktop/training_data/output/interpolated.csv',
                                 root_dir='C:\\Users/rladm/Desktop/training_data/output/',
                                 transform=transforms.Compose([
+                                    transforms.ToPILImage(),
                                     transforms.Resize((120,320)),
                                     transforms.ToTensor(),
                                     transforms.Normalize(0.5, 0.5)
@@ -82,6 +93,7 @@ if __name__ == '__main__':
     validation_set = UD.UdacityDataset(csv_file='C:\\users/rladm/Desktop/training_data/output/interpolated.csv',
                                 root_dir='C:\\Users/rladm/Desktop/training_data/output/',
                                 transform=transforms.Compose([
+                                    transforms.ToPILImage(),
                                     transforms.Resize((120,320)),
                                     transforms.ToTensor(),
                                     transforms.Normalize(0.5, 0.5)]),
@@ -127,8 +139,6 @@ if __name__ == '__main__':
             optimizer.zero_grad()
             training_loss_angle.backward()
             optimizer.step()
-
-
         
         print("Done")
         network.eval()
