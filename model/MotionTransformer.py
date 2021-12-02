@@ -101,6 +101,6 @@ class MotionTransformer(nn.Module):
         #steering_information = F.relu(self.steering_retrieval(reduced))
 
         # FC 1
-        angle = torch.tanh(self.steering_predictor(reduced))
+        angle = self.steering_predictor(reduced)
 
         return angle, speed
