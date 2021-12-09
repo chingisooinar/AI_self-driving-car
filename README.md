@@ -52,6 +52,8 @@ Get prediction json file and evaluate using [eval.ipynb](https://github.com/chin
 
 ![Untitled](media/Untitled%201.png)
 
+# Attention Maps
+![Untitled](media/attentions.png) 
 # YouTube
 
 [https://youtu.be/NeJRwUgqKdQ](https://youtu.be/NeJRwUgqKdQ)
