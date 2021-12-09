@@ -19,6 +19,7 @@ from model.MotionTransformer import MotionTransformer
 from model.SimpleTransformer import SimpleTransformer
 from model.LSTM import SequenceModel
 import wandb
+import os
 # noinspection PyAttributeOutsideInit
 class AverageMeter(object):
     """Computes and stores the average and current value"""
@@ -52,6 +53,8 @@ parameters = edict(
     all_frames=False,
     optical_flow=False
 )
+if not os.path.exists( f'saved_models/{parameters.model_name}'):
+    os.makedirs(f'saved_models/{parameters.model_name}')
 if parameters.model_name == 'LSTM':
     model_object = SequenceModel
 elif parameters.model_name == 'MotionTransformer' :
@@ -125,7 +128,7 @@ def adjust_learning_rate(optimizer, epoch):
 for epoch in range(parameters.epochs):
     train_angle_losses = AverageMeter()
     train_speed_losses = AverageMeter()
-    torch.save(network.state_dict(), "saved_models/transformer/epoch.tar")
+    torch.save(network.state_dict(), f'saved_models/{parameters.model_name}/epoch.tar')
     network.train()
     adjust_learning_rate(optimizer, epoch)
     # Calculation on Training Loss
@@ -138,13 +141,8 @@ for epoch in range(parameters.epochs):
         else:
             image, angle = param_values
         cur_bn = image.shape[0]
-        #image = image.permute(0,2,1,3,4)
-        #optical = optical.permute(0,2,1,3,4)
-
         loss = 0
         image = image.to(device)
-        #optical = optical.to(device)
-        #with torch.cuda.amp.autocast():
         if parameters.optical_flow:
             angle_hat, speed_hat = network(image, optical)  
             speed_hat = speed_hat.reshape(-1, 1)
@@ -153,7 +151,7 @@ for epoch in range(parameters.epochs):
             train_speed_losses.update(training_loss_speed.item())
         else:
             angle_hat = network(image)
-        #print(prediction.shape, angle.squeeze()[: , -angle.shape[1]:].shape)
+
         angle_hat = angle_hat.reshape(-1, 1)
         angle = angle.float().reshape(-1, 1).to(device)
         training_loss_angle = torch.sqrt(criterion(angle_hat,angle) + 1e-6)
@@ -181,8 +179,6 @@ for epoch in range(parameters.epochs):
                 else:
                     image, angle = param_values
                 cur_bn = image.shape[0]
-                #image = image.permute(0,2,1,3,4)
-                #optical = optical.permute(0,2,1,3,4)
                 loss = 0
                 image = image.to(device)
                 #optical = optical.to(device)
