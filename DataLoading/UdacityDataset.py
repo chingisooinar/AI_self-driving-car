@@ -141,11 +141,6 @@ class UdacityDataset(Dataset):
         image(s), angle(s), (optical_flow: optional)
         """
         if (isinstance(idx, int) and self.seq_len == 0) or (isinstance(idx, list) and len(idx) == self.seq_len):
-                #x_translation_range = 26 #80
-                #x_translation = x_translation_range*np.random.uniform() - (x_translation_range / 2.0)
-                #y_translation_range = 26 #40
-                #y_translation = y_translation_range*np.random.uniform() - y_translation_range / 2.0
-                #translate = (x_translation, y_translation, x_translation_range, y_translation_range)
             flip_horizontally = random.uniform(0, 1) > 0.5
             translate = None
             if random.uniform(0, 1) > 0.65: # translate
