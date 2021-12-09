@@ -9,8 +9,7 @@
 - easydict
 
 ## Data
-![Untitled](media/data.png) \br
-Data source is available on Udacity github.
+![Untitled](media/data.png) 
 
 - Download the dataset from: [https://github.com/udacity/self-driving-car/tree/master/datasets/CH2](https://github.com/udacity/self-driving-car/tree/master/datasets/CH2)
 - Extract images and csv from .bag files: https://github.com/rwightman/udacity-driving-reader
