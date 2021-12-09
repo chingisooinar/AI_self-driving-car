@@ -54,7 +54,8 @@ if __name__ == '__main__':
         batch_size = 32,
         seq_len = 5,
         num_workers = 4,
-        model_name = 'dave2'
+        model_name = 'dave2',
+        image_size = (120,320)
     )
     
     if parameters.model_name == 'dave2':
@@ -82,21 +83,19 @@ if __name__ == '__main__':
     training_set = UD.UdacityDataset(csv_file='C:\\users/rladm/Desktop/training_data/output/interpolated.csv',
                                 root_dir='C:\\Users/rladm/Desktop/training_data/output/',
                                 transform=transforms.Compose([
-                                    transforms.ToPILImage(),
-                                    transforms.Resize((120,320)),
                                     transforms.ToTensor(),
                                     transforms.Normalize(0.5, 0.5)
                                     ]),
+                                img_size=parameters.image_size,
                                 optical_flow=False,
                                 select_camera='center_camera',
                                 select_range=(0,split_point))
     validation_set = UD.UdacityDataset(csv_file='C:\\users/rladm/Desktop/training_data/output/interpolated.csv',
                                 root_dir='C:\\Users/rladm/Desktop/training_data/output/',
                                 transform=transforms.Compose([
-                                    transforms.ToPILImage(),
-                                    transforms.Resize((120,320)),
                                     transforms.ToTensor(),
                                     transforms.Normalize(0.5, 0.5)]),
+                                img_size=parameters.image_size,
                                 optical_flow=False,
                                 select_camera='center_camera',
                                 select_range=(split_point,dataset_size))
@@ -105,7 +104,6 @@ if __name__ == '__main__':
     validation_loader = DataLoader(validation_set,  shuffle=False, num_workers=parameters.num_workers, batch_size=parameters.batch_size)
     criterion =  torch.nn.MSELoss()
     criterion.to(device)
-    scaler = torch.cuda.amp.GradScaler()
 
     def adjust_learning_rate(optimizer, epoch):
         """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
