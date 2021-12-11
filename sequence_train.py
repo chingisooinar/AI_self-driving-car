@@ -45,13 +45,13 @@ parameters = edict(
     batch_size = 13,
     seq_len = 5,
     num_workers = 8,
-    model_name = 'SimpleTransformer',
+    model_name = 'MotionTransformer',
     normalization = ([0.485, 0.456, 0.406],
                     [0.229, 0.224, 0.225]),
     image_size=(224, 224),
     epochs=161,
     all_frames=False,
-    optical_flow=False
+    optical_flow=True
 )
 if not os.path.exists( f'saved_models/{parameters.model_name}'):
     os.makedirs(f'saved_models/{parameters.model_name}')
