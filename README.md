@@ -1,5 +1,7 @@
 # Self-Driving Car Steering Angle Prediction: Let Transformer Be a Car Again.
 [Technical Report](https://github.com/chingisooinar/AI_self-driving-car/blob/main/Technical_Report.pdf)
+![Untitled](media/training_curves.png) 
+
 ## Requirements
 
 - Pytorch ≥ 1.7
