@@ -43,7 +43,8 @@ Download ground truth predictions from [https://github.com/udacity/self-driving-
 2. run: python [eval_regular.py](https://github.com/chingisooinar/AI_self-driving-car/blob/main/eval_regular.py)
 
 Get prediction json file and evaluate using [eval.ipynb](https://github.com/chingisooinar/AI_self-driving-car/blob/main/eval.ipynb)
-
+# Checkpoints
+https://1drv.ms/u/s!Ao7oEpuQjECYmBJhwN6VsEzw8ZCY?e=DKfd6d
 # Architecture
 
 ![Untitled](media/Untitled.png)
