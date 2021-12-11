@@ -5,14 +5,6 @@ Created on Sun Nov  7 13:05:49 2021
 
 @author: chingis
 """
-
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Sat Nov  6 12:24:40 2021
-
-@author: chingis
-"""
 from PIL import Image
 from itertools import product
 from easydict import EasyDict as edict
