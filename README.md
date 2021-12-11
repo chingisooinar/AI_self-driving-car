@@ -6,6 +6,7 @@
 - Numpy
 - Opencv
 - Pandas
+- wandb
 - easydict
 
 ## Data
