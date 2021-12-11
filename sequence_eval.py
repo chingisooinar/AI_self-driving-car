@@ -50,18 +50,16 @@ class AverageMeter(object):
 device = torch.device("cuda")
 
 parameters = edict(
-    learning_rate = 0.001,
     batch_size = 13,
     seq_len = 5,
     num_workers = 16,
-    model_name = 'SimpleTransformer',
+    model_name = 'MotionTransformer',
     normalization = ([0.485, 0.456, 0.406],
                     [0.229, 0.224, 0.225]),
     image_size=(224, 224),
-    epochs=161,
     all_frames=True,
-    optical_flow=False,
-    checkpoint='saved_models/transformer/simpletransformer.tar'
+    optical_flow=True,
+    checkpoint='saved_models/transformer/opticaltransformer.tar'
 )
 
 
